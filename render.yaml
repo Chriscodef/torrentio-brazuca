@@ -1,97 +1,56 @@
 services:
-  - type: pserv
-    name: torrentio-postgres
-    runtime: image
-    image:
-      fromRegistry: true
-      registryCredential: registry-credential
-      url: postgres:16-alpine
-    envVars:
-      - key: POSTGRES_USER
-        value: torrentio
-      - key: POSTGRES_PASSWORD
-        generateValue: true
-      - key: POSTGRES_DB
-        value: torrentio
-    disk:
-      name: postgres-data
-      mountPath: /var/lib/postgresql/data
-      sizeGB: 50
-    plan: starter
-
-  - type: redis
-    name: torrentio-redis
-    ipAddress: redis
-    plan: starter
-    maxmemoryPolicy: allkeys_lru
-
   - type: web
     name: torrentio-addon
     runtime: node
-    buildCommand: |
-      cd addon
-      npm install
+    repo: https://github.com/Chriscodef/torrentio-brazuca.git
+    branch: main
+    buildCommand: cd addon && npm install
     startCommand: cd addon && npm start
+    rootDir: addon
     envVars:
-      - key: DATABASE_URL
-        fromService:
-          name: torrentio-postgres
-          property: connectionString
+      - key: DATABASE_URI
+        value: ${{ DATABASE_URL }}
       - key: REDIS_URL
         fromService:
-          name: torrentio-redis
+          name: redis-cache
           property: connectionString
       - key: PORT
-        value: 10000
+        value: "10000"
       - key: NODE_ENV
         value: production
-      - key: CACHE_MAX_AGE
-        value: "3600"
-    plan: starter
-    healthCheckPath: /
-
-  - type: web
-    name: torrentio-catalogs
-    runtime: node
-    buildCommand: |
-      cd catalogs
-      npm install
-    startCommand: cd catalogs && npm start
-    envVars:
-      - key: DATABASE_URL
-        fromService:
-          name: torrentio-postgres
-          property: connectionString
-      - key: PORT
-        value: 10000
-      - key: NODE_ENV
-        value: production
-    plan: starter
-    healthCheckPath: /
+    plan: free
+    autoDeploy: true
 
   - type: web
     name: torrentio-scraper
     runtime: node
-    buildCommand: |
-      cd scraper
-      npm install
+    repo: https://github.com/Chriscodef/torrentio-brazuca.git
+    branch: main
+    buildCommand: cd scraper && npm install
     startCommand: cd scraper && npm start
+    rootDir: scraper
     envVars:
       - key: DATABASE_URI
-        fromService:
-          name: torrentio-postgres
-          property: connectionString
+        value: ${{ DATABASE_URL }}
       - key: SCRAPER_INTERVAL
-        value: "0 */4 * * *"
+        value: "0 */6 * * *"
       - key: MAX_PAGES
-        value: "3"
+        value: "5"
       - key: LOG_LEVEL
         value: info
       - key: NODE_ENV
         value: production
-    plan: starter
+    plan: free
+    autoDeploy: true
+
+  - type: redis
+    name: redis-cache
+    plan: free
 
 databases:
-  - name: torrentio
-    plan: starter
+  - name: torrentio-db
+    databaseName: torrentio
+    user: torrentio
+    plan: free
     postgresVersion: 16
+    ipAllowList: []
