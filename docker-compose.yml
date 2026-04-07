@@ -1,0 +1,109 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: torrentio_postgres
+    environment:
+      POSTGRES_USER: torrentio
+      POSTGRES_PASSWORD: torrentio_password_change_me
+      POSTGRES_DB: torrentio
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U torrentio"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - torrentio-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: torrentio_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - torrentio-network
+
+  scraper:
+    build:
+      context: ./scraper
+      dockerfile: Dockerfile
+    container_name: torrentio_scraper
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URI: postgresql://torrentio:torrentio_password_change_me@postgres:5432/torrentio
+      SCRAPER_INTERVAL: "0 */6 * * *"
+      MAX_PAGES: "5"
+      LOG_LEVEL: "info"
+      NODE_ENV: "production"
+    volumes:
+      - ./scraper/logs:/app/logs
+    networks:
+      - torrentio-network
+
+  addon:
+    build:
+      context: ./addon
+      dockerfile: Dockerfile
+    container_name: torrentio_addon
+    ports:
+      - "7000:7000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      DATABASE_URI: postgresql://torrentio:torrentio_password_change_me@postgres:5432/torrentio
+      REDIS_URL: redis://redis:6379
+      PORT: "7000"
+      NODE_ENV: "production"
+      CACHE_MAX_AGE: "3600"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7000/addon/addon.js"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - torrentio-network
+
+  catalogs:
+    build:
+      context: ./catalogs
+      dockerfile: Dockerfile
+    container_name: torrentio_catalogs
+    ports:
+      - "7001:7000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URI: postgresql://torrentio:torrentio_password_change_me@postgres:5432/torrentio
+      MONGODB_URI: "mongodb://localhost:27017/torrentio"
+      PORT: "7000"
+      NODE_ENV: "production"
+    networks:
+      - torrentio-network
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  torrentio-network:
+    driver: bridge
