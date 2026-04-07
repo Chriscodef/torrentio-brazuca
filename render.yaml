@@ -2,14 +2,13 @@ services:
   - type: web
     name: torrentio-addon
     runtime: node
-    repo: https://github.com/Chriscodef/torrentio-brazuca.git
-    branch: main
     buildCommand: cd addon && npm install
     startCommand: cd addon && npm start
-    rootDir: addon
     envVars:
       - key: DATABASE_URI
-        value: ${{ DATABASE_URL }}
+        fromDatabase:
+          name: torrentio-db
+          property: connectionString
       - key: REDIS_URL
         fromService:
           name: redis-cache
@@ -19,29 +18,28 @@ services:
       - key: NODE_ENV
         value: production
     plan: free
-    autoDeploy: true
+    autoDeploy: false
 
   - type: web
     name: torrentio-scraper
     runtime: node
-    repo: https://github.com/Chriscodef/torrentio-brazuca.git
-    branch: main
     buildCommand: cd scraper && npm install
     startCommand: cd scraper && npm start
-    rootDir: scraper
     envVars:
       - key: DATABASE_URI
-        value: ${{ DATABASE_URL }}
+        fromDatabase:
+          name: torrentio-db
+          property: connectionString
       - key: SCRAPER_INTERVAL
         value: "0 */6 * * *"
       - key: MAX_PAGES
         value: "5"
       - key: LOG_LEVEL
-        value: info
+        value: "info"
       - key: NODE_ENV
         value: production
     plan: free
-    autoDeploy: true
+    autoDeploy: false
 
   - type: redis
     name: redis-cache
@@ -53,4 +51,3 @@ databases:
     user: torrentio
     plan: free
     postgresVersion: 16
-    ipAllowList: []
