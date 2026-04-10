@@ -2,6 +2,14 @@
 
 Fork do Torrentio com suporte completo aos **providers brasileiros** do addon "Brazuca Torrents" para Stremio.
 
+## 🚀 Deploy Automático
+
+Este projeto está configurado para **deploy automático via GitHub Actions**:
+
+1. **Adicione o secret `VERCEL_TOKEN`** em: `https://github.com/Chriscodef/torrentio-brazuca/settings/secrets/actions`
+2. **GitHub Actions fará deploy automático** toda vez que você faz push
+3. Addon estará disponível em: `https://torrentio-brazuca-addon.vercel.app/brazuca/manifest.json`
+
 ## 📺 O que é Torrentio?
 
 Torrentio é um addon poderoso para o Stremio que:
