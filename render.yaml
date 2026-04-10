@@ -2,7 +2,7 @@ services:
   - type: web
     name: torrentio-addon
     runtime: node
-    buildCommand: cd addon && npm install
+    buildCommand: cd addon && npm ci
     startCommand: cd addon && npm start
     envVars:
       - key: DATABASE_URI
@@ -17,13 +17,11 @@ services:
         value: "10000"
       - key: NODE_ENV
         value: production
-    plan: free
-    autoDeploy: false
 
   - type: web
     name: torrentio-scraper
     runtime: node
-    buildCommand: cd scraper && npm install
+    buildCommand: cd scraper && npm ci
     startCommand: cd scraper && npm start
     envVars:
       - key: DATABASE_URI
@@ -35,19 +33,14 @@ services:
       - key: MAX_PAGES
         value: "5"
       - key: LOG_LEVEL
-        value: "info"
+        value: info
       - key: NODE_ENV
         value: production
-    plan: free
-    autoDeploy: false
 
   - type: redis
     name: redis-cache
-    plan: free
 
 databases:
   - name: torrentio-db
     databaseName: torrentio
     user: torrentio
-    plan: free
-    postgresVersion: 16
