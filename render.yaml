@@ -2,45 +2,31 @@ services:
   - type: web
     name: torrentio-addon
     runtime: node
-    buildCommand: cd addon && npm ci
+    buildCommand: cd addon && npm install --production
     startCommand: cd addon && npm start
     envVars:
       - key: DATABASE_URI
         fromDatabase:
-          name: torrentio-db
-          property: connectionString
-      - key: REDIS_URL
-        fromService:
-          name: redis-cache
+          name: torrentio
           property: connectionString
       - key: PORT
-        value: "10000"
+        value: "3000"
       - key: NODE_ENV
         value: production
 
   - type: web
     name: torrentio-scraper
     runtime: node
-    buildCommand: cd scraper && npm ci
+    buildCommand: cd scraper && npm install --production
     startCommand: cd scraper && npm start
     envVars:
       - key: DATABASE_URI
         fromDatabase:
-          name: torrentio-db
+          name: torrentio
           property: connectionString
-      - key: SCRAPER_INTERVAL
-        value: "0 */6 * * *"
-      - key: MAX_PAGES
-        value: "5"
-      - key: LOG_LEVEL
-        value: info
       - key: NODE_ENV
         value: production
 
-  - type: redis
-    name: redis-cache
-
 databases:
-  - name: torrentio-db
-    databaseName: torrentio
-    user: torrentio
+  - name: torrentio
+    user: torrentio_user
